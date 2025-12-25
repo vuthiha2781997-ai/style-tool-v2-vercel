@@ -29,6 +29,9 @@
     hr {
       margin: 20px 0;
     }
+    ul {
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -38,9 +41,9 @@
 
   <!-- ✅ STEP 1: UPLOAD PDF STYLE GUIDE -->
   <p><b>Upload Style Guide (PDF):</b></p>
-  <input type="file" id="pdfInput" accept="application/pdf">
+  <input type="file" id="pdfInput" accept="application/pdf" multiple>
   <br>
-  <button onclick="uploadPDF()">Load Style Guide</button>
+  <button onclick="uploadPDF()">Load Style Guide(s)</button>
   <div id="pdfStatus"></div>
 
   <hr>
@@ -73,20 +76,22 @@
     reader.readAsDataURL(file);
   });
 
-  /* ===== PDF UPLOAD ===== */
+  /* ===== PDF UPLOAD (MULTIPLE) ===== */
   async function uploadPDF() {
     const pdfInput = document.getElementById("pdfInput");
     const status = document.getElementById("pdfStatus");
 
-    if (!pdfInput.files[0]) {
-      alert("Please select a PDF file first");
+    if (pdfInput.files.length === 0) {
+      alert("Please select at least one PDF file first");
       return;
     }
 
-    status.innerHTML = "Uploading style guide...";
+    status.innerHTML = "Uploading style guide(s)...";
 
     const formData = new FormData();
-    formData.append("pdf", pdfInput.files[0]);
+    for (let file of pdfInput.files) {
+      formData.append("pdfs", file); // dùng "pdfs" để API nhận mảng file
+    }
 
     try {
       const response = await fetch("/api/upload-style", {
@@ -95,9 +100,20 @@
       });
 
       const data = await response.json();
-      status.innerHTML = data.message || "Style guide loaded";
+
+      // Hiển thị danh sách PDF đã upload
+      if (pdfInput.files.length > 1) {
+        let listHtml = "<b>Uploaded PDFs:</b><ul>";
+        for (let file of pdfInput.files) {
+          listHtml += `<li>${file.name}</li>`;
+        }
+        listHtml += "</ul>";
+        status.innerHTML = listHtml;
+      } else {
+        status.innerHTML = data.message || "Style guide loaded";
+      }
     } catch (err) {
-      status.innerHTML = "Error uploading PDF";
+      status.innerHTML = "Error uploading PDF(s)";
       console.error(err);
     }
   }
