@@ -19,11 +19,15 @@
     button {
       padding: 10px 16px;
       cursor: pointer;
+      margin-top: 8px;
     }
     img {
       max-width: 100%;
       margin-top: 10px;
       border-radius: 6px;
+    }
+    hr {
+      margin: 20px 0;
     }
   </style>
 </head>
@@ -32,7 +36,17 @@
 <div class="box">
   <h2>Product Style Finder</h2>
 
-  <p>Upload product image:</p>
+  <!-- ✅ STEP 1: UPLOAD PDF STYLE GUIDE -->
+  <p><b>Upload Style Guide (PDF):</b></p>
+  <input type="file" id="pdfInput" accept="application/pdf">
+  <br>
+  <button onclick="uploadPDF()">Load Style Guide</button>
+  <div id="pdfStatus"></div>
+
+  <hr>
+
+  <!-- ✅ STEP 2: UPLOAD PRODUCT IMAGE -->
+  <p><b>Upload product image:</b></p>
   <input type="file" id="imageInput" accept="image/*">
 
   <img id="preview" />
@@ -44,6 +58,7 @@
 </div>
 
 <script>
+  /* ===== IMAGE UPLOAD ===== */
   const imageInput = document.getElementById("imageInput");
   const preview = document.getElementById("preview");
 
@@ -58,6 +73,36 @@
     reader.readAsDataURL(file);
   });
 
+  /* ===== PDF UPLOAD ===== */
+  async function uploadPDF() {
+    const pdfInput = document.getElementById("pdfInput");
+    const status = document.getElementById("pdfStatus");
+
+    if (!pdfInput.files[0]) {
+      alert("Please select a PDF file first");
+      return;
+    }
+
+    status.innerHTML = "Uploading style guide...";
+
+    const formData = new FormData();
+    formData.append("pdf", pdfInput.files[0]);
+
+    try {
+      const response = await fetch("/api/upload-style", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+      status.innerHTML = data.message || "Style guide loaded";
+    } catch (err) {
+      status.innerHTML = "Error uploading PDF";
+      console.error(err);
+    }
+  }
+
+  /* ===== ANALYZE IMAGE ===== */
   async function analyze() {
     if (!preview.src) {
       alert("Please upload an image first");
