@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Style Finder Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 40px;
+    }
+    .box {
+      background: white;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+    img {
+      max-width: 100%;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>Product Style Finder</h2>
+
+  <p>Upload product image:</p>
+  <input type="file" id="imageInput">
+
+  <br><br>
+  <button onclick="analyze()">Analyze Style</button>
+
+  <div id="result"></div>
+</div>
+
+<script>
+  function analyze() {
+    const result = document.getElementById("result");
+    result.innerHTML = "<p>Image received. (AI analysis will be added later)</p>";
+  }
+</script>
+
+</body>
+</html>
