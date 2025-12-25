@@ -23,6 +23,7 @@
     img {
       max-width: 100%;
       margin-top: 10px;
+      border-radius: 6px;
     }
   </style>
 </head>
@@ -32,7 +33,9 @@
   <h2>Product Style Finder</h2>
 
   <p>Upload product image:</p>
-  <input type="file" id="imageInput">
+  <input type="file" id="imageInput" accept="image/*">
+
+  <img id="preview" />
 
   <br><br>
   <button onclick="analyze()">Analyze Style</button>
@@ -41,30 +44,50 @@
 </div>
 
 <script>
- async function analyze() {
-  if (!preview.src) {
-    alert("Please upload or paste an image first");
-    return;
-  }
+  const imageInput = document.getElementById("imageInput");
+  const preview = document.getElementById("preview");
 
-  document.getElementById("result").innerHTML = "Analyzing image...";
+  imageInput.addEventListener("change", () => {
+    const file = imageInput.files[0];
+    if (!file) return;
 
-  const response = await fetch("/api/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      imageBase64: preview.src
-    })
+    const reader = new FileReader();
+    reader.onload = () => {
+      preview.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   });
 
-  const data = await response.json();
+  async function analyze() {
+    if (!preview.src) {
+      alert("Please upload an image first");
+      return;
+    }
 
-  document.getElementById("result").innerHTML =
-    "<b>Suggested Style:</b> " + data.style +
-    "<br><br><b>Reason:</b><br>" + data.reason;
-}
+    const resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = "Analyzing image...";
+
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: preview.src
+        })
+      });
+
+      const data = await response.json();
+
+      resultDiv.innerHTML = `
+        <b>Suggested Style:</b> ${data.style}<br><br>
+        <b>Reason:</b><br>${data.reason}
+      `;
+    } catch (err) {
+      resultDiv.innerHTML = "Error analyzing image.";
+      console.error(err);
+    }
+  }
 </script>
 
 </body>
 </html>
-
