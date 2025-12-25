@@ -41,11 +41,30 @@
 </div>
 
 <script>
-  function analyze() {
-    const result = document.getElementById("result");
-    result.innerHTML = "<p>Image received. (AI analysis will be added later)</p>";
+ async function analyze() {
+  if (!preview.src) {
+    alert("Please upload or paste an image first");
+    return;
   }
+
+  document.getElementById("result").innerHTML = "Analyzing image...";
+
+  const response = await fetch("/api/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      imageBase64: preview.src
+    })
+  });
+
+  const data = await response.json();
+
+  document.getElementById("result").innerHTML =
+    "<b>Suggested Style:</b> " + data.style +
+    "<br><br><b>Reason:</b><br>" + data.reason;
+}
 </script>
 
 </body>
 </html>
+
