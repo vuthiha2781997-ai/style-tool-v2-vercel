@@ -32,14 +32,6 @@
     ul {
       margin-top: 10px;
     }
-    .pdf-content {
-      background: #f9f9f9;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 6px;
-      max-height: 150px;
-      overflow-y: auto;
-    }
   </style>
 </head>
 <body>
@@ -53,7 +45,6 @@
   <br>
   <button onclick="uploadPDF()">Load Style Guide(s)</button>
   <div id="pdfStatus"></div>
-  <div id="pdfContents"></div>
 
   <hr>
 
@@ -89,7 +80,6 @@
   async function uploadPDF() {
     const pdfInput = document.getElementById("pdfInput");
     const status = document.getElementById("pdfStatus");
-    const pdfContents = document.getElementById("pdfContents");
 
     if (pdfInput.files.length === 0) {
       alert("Please select at least one PDF file first");
@@ -97,11 +87,10 @@
     }
 
     status.innerHTML = "Uploading style guide(s)...";
-    pdfContents.innerHTML = "";
 
     const formData = new FormData();
     for (let file of pdfInput.files) {
-      formData.append("pdfs", file);
+      formData.append("pdfs", file); // key "pdfs" phải khớp với backend
     }
 
     try {
@@ -112,23 +101,13 @@
 
       const data = await response.json();
 
-      // Hiển thị tên PDF
+      // Hiển thị tên PDF đã upload
       let listHtml = "<b>Uploaded PDFs:</b><ul>";
       for (let file of pdfInput.files) {
         listHtml += `<li>${file.name}</li>`;
       }
       listHtml += "</ul>";
       status.innerHTML = listHtml;
-
-      // Nếu backend trả nội dung PDF
-      if (data.contents) {
-        data.contents.forEach((content, index) => {
-          const div = document.createElement("div");
-          div.className = "pdf-content";
-          div.innerHTML = `<b>${pdfInput.files[index].name}</b><br>${content}`;
-          pdfContents.appendChild(div);
-        });
-      }
 
     } catch (err) {
       status.innerHTML = "Error uploading PDF(s)";
