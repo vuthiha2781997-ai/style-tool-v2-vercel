@@ -1,151 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Style Finder Tool</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 40px;
-    }
-    .box {
-      background: white;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-      border-radius: 8px;
-    }
-    button {
-      padding: 10px 16px;
-      cursor: pointer;
-      margin-top: 8px;
-    }
-    img {
-      max-width: 100%;
-      margin-top: 10px;
-      border-radius: 6px;
-    }
-    hr {
-      margin: 20px 0;
-    }
-    ul {
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-
-<div class="box">
-  <h2>Product Style Finder</h2>
-
-  <!-- STEP 1: UPLOAD PDF STYLE GUIDE -->
-  <p><b>Upload Style Guide (PDF):</b></p>
-  <input type="file" id="pdfInput" accept="application/pdf" multiple>
-  <br>
-  <button onclick="uploadPDF()">Load Style Guide(s)</button>
-  <div id="pdfStatus"></div>
-
-  <hr>
-
-  <!-- STEP 2: UPLOAD PRODUCT IMAGE -->
-  <p><b>Upload product image:</b></p>
-  <input type="file" id="imageInput" accept="image/*">
-
-  <img id="preview" />
-
-  <br><br>
-  <button onclick="analyze()">Analyze Style</button>
-
-  <div id="result"></div>
-</div>
-
 <script>
-  /* ===== IMAGE UPLOAD ===== */
+  let uploadedPdfsBase64 = []; // Lưu dữ liệu PDF tạm thời
+
   const imageInput = document.getElementById("imageInput");
   const preview = document.getElementById("preview");
 
+  // Xử lý xem trước ảnh sản phẩm
   imageInput.addEventListener("change", () => {
     const file = imageInput.files[0];
-    if (!file) return;
-
     const reader = new FileReader();
-    reader.onload = () => {
-      preview.src = reader.result;
-    };
+    reader.onload = () => { preview.src = reader.result; };
     reader.readAsDataURL(file);
   });
 
-  /* ===== PDF UPLOAD (MULTIPLE) ===== */
+  // Xử lý nạp PDF vào bộ nhớ
   async function uploadPDF() {
     const pdfInput = document.getElementById("pdfInput");
     const status = document.getElementById("pdfStatus");
+    
+    if (pdfInput.files.length === 0) return alert("Chọn ít nhất 1 file PDF");
 
-    if (pdfInput.files.length === 0) {
-      alert("Please select at least one PDF file first");
-      return;
-    }
+    status.innerHTML = "Đang nạp Style Guide...";
+    uploadedPdfsBase64 = [];
 
-    status.innerHTML = "Uploading style guide(s)...";
-
-    const formData = new FormData();
     for (let file of pdfInput.files) {
-      formData.append("pdfs", file); // key "pdfs" phải khớp với backend
+      const base64 = await toBase64(file);
+      uploadedPdfsBase64.push(base64);
     }
 
-    try {
-      const response = await fetch("/api/upload-style", {
-        method: "POST",
-        body: formData
-      });
-
-      const data = await response.json();
-
-      // Hiển thị tên PDF đã upload
-      let listHtml = "<b>Uploaded PDFs:</b><ul>";
-      for (let file of pdfInput.files) {
-        listHtml += `<li>${file.name}</li>`;
-      }
-      listHtml += "</ul>";
-      status.innerHTML = listHtml;
-
-    } catch (err) {
-      status.innerHTML = "Error uploading PDF(s)";
-      console.error(err);
-    }
+    status.innerHTML = `✅ Đã nạp ${pdfInput.files.length} file Style Guide.`;
   }
 
-  /* ===== ANALYZE IMAGE ===== */
+  // Hàm bổ trợ chuyển file sang Base64
+  const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+
+  // Gửi dữ liệu đi phân tích
   async function analyze() {
-    if (!preview.src) {
-      alert("Please upload an image first");
+    if (!preview.src || uploadedPdfsBase64.length === 0) {
+      alert("Vui lòng tải lên cả ảnh sản phẩm và PDF style guide!");
       return;
     }
 
     const resultDiv = document.getElementById("result");
-    resultDiv.innerHTML = "Analyzing image...";
+    resultDiv.innerHTML = "⏳ AI đang đối chiếu ảnh với Style Guide trong PDF... (có thể mất 10s)";
 
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageBase64: preview.src
+          imageBase64: preview.src,
+          pdfDataList: uploadedPdfsBase64
         })
       });
 
       const data = await response.json();
-
       resultDiv.innerHTML = `
-        <b>Suggested Style:</b> ${data.style}<br><br>
-        <b>Reason:</b><br>${data.reason}
+        <div style="margin-top:20px; border: 2px solid #007bff; padding: 15px; border-radius: 8px;">
+          <h3 style="color:#007bff">Kết quả phân tích:</h3>
+          <p><b>Style:</b> ${data.style}</p>
+          <p><b>Lý do:</b> ${data.reason}</p>
+        </div>
       `;
     } catch (err) {
-      resultDiv.innerHTML = "Error analyzing image.";
-      console.error(err);
+      resultDiv.innerHTML = "❌ Lỗi khi phân tích. Vui lòng kiểm tra API Key.";
     }
   }
 </script>
-
-</body>
-</html>
